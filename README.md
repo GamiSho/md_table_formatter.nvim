@@ -1,0 +1,1 @@
+# md_table_formatter.nvim
