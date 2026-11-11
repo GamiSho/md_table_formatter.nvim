@@ -13,11 +13,6 @@ Install with any Neovim plugin manager, for example:
 { "GamiSho/md_table_formatter.nvim" }
 ```
 
-```lua
--- packer.nvim
-use "GamiSho/md_table_formatter.nvim"
-```
-
 No setup call is required. With lazy-loading enabled, configure the manager to
 load the plugin for `TableFormat` or load it before using the Lua API.
 
