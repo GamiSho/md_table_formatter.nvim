@@ -133,6 +133,7 @@ end
 function tests.integration()
   equal(vim.fn.exists(":TableFormat"), 2)
   equal(type(api.format), "function")
+  equal(vim.fn.maparg("<leader>tf", "n"), "")
   local input = {
     "Before", "", "|X|", "|---|", "|Y|", "", "Text",
     "|Name|Age|", "|---|---|", "|Alice|20|", "", "After",
@@ -154,6 +155,10 @@ function tests.integration()
     equal(vim.api.nvim_win_get_cursor(0)[1], 3)
     assert_pipes_align(vim.api.nvim_buf_get_lines(0, 0, -1, false))
   end
+
+  set_buffer({ "|A               |", "|---|", "|x|" }, 1, 15)
+  assert(api.format())
+  equal(vim.api.nvim_win_get_cursor(0), { 1, 6 })
 end
 
 function tests.integration_errors()
