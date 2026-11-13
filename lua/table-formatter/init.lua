@@ -7,6 +7,7 @@ function M.format()
   local buffer = vim.api.nvim_get_current_buf()
   local cursor = vim.api.nvim_win_get_cursor(0)
   local lines = vim.api.nvim_buf_get_lines(buffer, 0, -1, false)
+  -- Locate the table around the cursor before attempting to format it.
   local first, last = detector.find(lines, cursor[1])
   if not first then
     vim.notify(last, vim.log.levels.WARN)
@@ -23,6 +24,7 @@ function M.format()
     return false
   end
 
+  -- Report buffer update errors rather than leaving the user without feedback.
   local ok = pcall(vim.api.nvim_buf_set_lines, buffer, first - 1, last, false, output)
   if not ok then
     vim.notify("Could not format Markdown table.", vim.log.levels.WARN)
