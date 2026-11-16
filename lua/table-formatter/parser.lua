@@ -23,15 +23,13 @@ function M.parse_row(line)
   return cells
 end
 
-function M.parse(lines)
-  if #lines < 2 then
+function M.validate(rows)
+  if #rows < 2 then
     return nil, "Invalid Markdown table."
   end
 
-  local rows = {}
-  for i, line in ipairs(lines) do
-    rows[i] = M.parse_row(line)
-    if #rows[i] == 0 or (i > 1 and #rows[i] ~= #rows[1]) then
+  for i, row in ipairs(rows) do
+    if #row == 0 or (i > 1 and #row ~= #rows[1]) then
       return nil, "Invalid Markdown table."
     end
   end
@@ -49,6 +47,14 @@ function M.parse(lines)
   end
 
   return { rows = rows, alignments = alignments }
+end
+
+function M.parse(lines)
+  local rows = {}
+  for i, line in ipairs(lines) do
+    rows[i] = M.parse_row(line)
+  end
+  return M.validate(rows)
 end
 
 return M
