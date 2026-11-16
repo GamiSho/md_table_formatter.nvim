@@ -3,13 +3,13 @@ local parser = require("table-formatter.parser")
 local M = {}
 
 -- Format parsed rows while preserving each column's alignment.
-function M.format(lines)
-  local table_data, err = parser.parse(lines)
+function M.format_rows(rows)
+  local table_data, err = parser.validate(rows)
   if not table_data then
     return nil, err
   end
 
-  local rows, alignments = table_data.rows, table_data.alignments
+  local alignments = table_data.alignments
   local widths = {}
   -- Measure the widest cell in each column, excluding the separator row.
   for i, alignment in ipairs(alignments) do
@@ -45,6 +45,14 @@ function M.format(lines)
     output[row_index] = "| " .. table.concat(cells, " | ") .. " |"
   end
   return output
+end
+
+function M.format(lines)
+  local table_data, err = parser.parse(lines)
+  if not table_data then
+    return nil, err
+  end
+  return M.format_rows(table_data.rows)
 end
 
 return M
