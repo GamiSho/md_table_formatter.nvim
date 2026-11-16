@@ -76,3 +76,4 @@ display columns and idempotency.
 - [ ] feat: Edit table values
 - [ ] feat: Insert and delete rows
 - [ ] feat: Add and delete columns
+- [ ] feat: Create blank table >>> :TableCreate 3*4
