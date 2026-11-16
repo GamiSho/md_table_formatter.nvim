@@ -14,7 +14,7 @@ Install with any Neovim plugin manager, for example:
 ```
 
 No setup call is required. With lazy-loading enabled, configure the manager to
-load the plugin for `TableFormat` or load it before using the Lua API.
+load the plugin for the commands you use or load it before using the Lua API.
 
 ## Usage
 
@@ -38,6 +38,36 @@ vim.keymap.set(
 The command works regardless of buffer filetype. It formats only the contiguous
 table under the cursor, preserves the cursor's row, and leaves invalid tables
 unchanged with a warning.
+
+### Editing rows
+
+`:TableAddRow` inserts an empty row below the current body row. From the header
+or separator it inserts the first body row. The cursor moves into its first
+cell.
+
+`:TableDeleteRow` deletes the current body row; the header and separator cannot
+be deleted. The cursor moves to the next body row, the previous body row if
+there is no next row, or the header if no body rows remain.
+
+The corresponding Lua APIs are:
+
+```lua
+require("table-formatter").add_row()
+require("table-formatter").delete_row()
+```
+
+Both operations validate the existing table, format the entire result, and can
+each be undone with one `u`. Invalid tables are left unchanged with a warning.
+No default mappings are installed; optional mappings include:
+
+```lua
+vim.keymap.set("n", "<leader>tr", "<cmd>TableAddRow<CR>", {
+  desc = "Add Markdown table row",
+})
+vim.keymap.set("n", "<leader>tdr", "<cmd>TableDeleteRow<CR>", {
+  desc = "Delete Markdown table row",
+})
+```
 
 ## Supported syntax
 
@@ -74,6 +104,6 @@ display columns and idempotency.
 ## Todo
 
 - [ ] feat: Edit table values
-- [ ] feat: Insert and delete rows
+- [x] feat: Insert and delete rows
 - [ ] feat: Add and delete columns
 - [ ] feat: Create blank table >>> :TableCreate 3*4

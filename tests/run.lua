@@ -204,7 +204,13 @@ function tests.add_rows()
     local inserted = math.max(row, 2) + 1
     equal(vim.api.nvim_win_get_cursor(0), { inserted, 2 })
     local parsed = assert(parser.parse(result))
-    equal(parsed.rows[inserted], { "", "" })
+    local expected_rows = assert(parser.parse(input)).rows
+    table.insert(expected_rows, inserted, { "", "" })
+    for i, cells in ipairs(parsed.rows) do
+      if i ~= 2 then
+        equal(cells, expected_rows[i])
+      end
+    end
     equal(parsed.alignments, {
       { left = true, right = false }, { left = false, right = true },
     })
