@@ -162,7 +162,7 @@ Expected semantics:
 
 ### 8.3 Add column
 
-Planned next capability.
+Current capability.
 
 Requirements:
 
@@ -188,7 +188,7 @@ require("table-formatter").add_column()
 
 ### 8.4 Delete column
 
-Planned next capability.
+Planned capability.
 
 Requirements:
 

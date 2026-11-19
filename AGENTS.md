@@ -19,10 +19,10 @@ Implemented and expected to remain working:
 - Keep formatting idempotent.
 - Add a table row.
 - Delete a table row.
+- Add a table column.
 
 Not implemented yet:
 
-- Add a table column.
 - Delete a table column.
 
 ## Important design rules
@@ -47,16 +47,14 @@ Existing formatting entry points:
 - `:TableFormat`
 - `require("table-formatter").format()`
 
-Structural editing should follow the same architecture and expose commands and corresponding public Lua APIs. Row add/delete are current capabilities. Column add/delete are the next planned feature.
+Structural editing should follow the same architecture and expose commands and corresponding public Lua APIs. Row add/delete and column insertion are current capabilities. Column deletion is the next planned feature.
 
 ## Current next task
 
-Implement column insertion and deletion without regressing formatting or row editing.
+Implement column deletion without regressing formatting, row editing, or column insertion.
 
 Preferred behavior:
 
-- Add column: insert a new empty column immediately to the right of the column containing the cursor.
-- The new separator cell uses plain left alignment by default.
 - Delete column: delete the column containing the cursor from header, separator, and every body row.
 - Do not allow deleting the only remaining column.
 - Determine the current logical cell/column from the cursor position rather than requiring a numeric column argument.
