@@ -331,6 +331,41 @@ function tests.row_edit_isolation_and_undo()
   end
 end
 
+function tests.add_column_cursor_boundaries()
+  for _, pipes in ipairs({ { "|", "|" }, { "", "" }, { "|", "" }, { "", "|" } }) do
+    local input = {
+      pipes[1] .. "A|B|C" .. pipes[2],
+      pipes[1] .. "---|---|---" .. pipes[2],
+      pipes[1] .. "1|2|3" .. pipes[2],
+    }
+    for row, line in ipairs(input) do
+      for _, case in ipairs({
+        { col = 0, added = 2 },
+        { col = line:find("|", #pipes[1] + 1, true) - 1, added = 3 },
+        { col = #line - 1, added = 4 },
+      }) do
+        set_buffer(input, row, case.col)
+        assert(api.add_column())
+        local expected = {
+          { "A", "B", "C" }, { "---", "---", "---" }, { "1", "2", "3" },
+        }
+        local expected_lines = {}
+        for row_index, cells in ipairs(expected) do
+          table.insert(cells, case.added, row_index == 2 and "---" or "")
+          expected_lines[row_index] = "|" .. table.concat(cells, "|") .. "|"
+        end
+        local result = vim.api.nvim_buf_get_lines(0, 0, -1, false)
+        equal(result, formatted(expected_lines))
+        local pipe = 0
+        for _ = 1, case.added do
+          pipe = result[row]:find("|", pipe + 1, true)
+        end
+        equal(vim.api.nvim_win_get_cursor(0), { row, pipe + 1 })
+      end
+    end
+  end
+end
+
 function tests.add_columns()
   equal(vim.fn.exists(":TableAddColumn"), 2)
   equal(type(api.add_column), "function")
