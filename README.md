@@ -134,8 +134,7 @@ display columns and idempotency.
 
 ## Todo
 
-- [ ] feat: Edit table values
 - [x] feat: Insert and delete rows
 - [x] feat: Add table column
 - [x] feat: Delete table column
-- [ ] feat: Create blank table >>> :TableCreate 3*4
+- [ ] feat: Create blank table
