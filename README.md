@@ -69,6 +69,29 @@ vim.keymap.set("n", "<leader>tdr", "<cmd>TableDeleteRow<CR>", {
 })
 ```
 
+### Editing columns
+
+`:TableAddColumn` inserts an empty column immediately to the right of the
+column containing the cursor. The new column is left-aligned, and the cursor
+moves into it on the same table row.
+
+The corresponding Lua API is:
+
+```lua
+require("table-formatter").add_column()
+```
+
+The operation validates and reformats the entire table before replacing it,
+preserves existing column alignment, and can be undone with one `u`.
+Invalid tables are left unchanged with a warning. No default mapping is
+installed; an optional mapping is:
+
+```lua
+vim.keymap.set("n", "<leader>tac", "<cmd>TableAddColumn<CR>", {
+  desc = "Add Markdown table column",
+})
+```
+
 ## Supported syntax
 
 A table has a header, an immediately following separator, and zero or more body
@@ -105,5 +128,6 @@ display columns and idempotency.
 
 - [ ] feat: Edit table values
 - [x] feat: Insert and delete rows
-- [ ] feat: Add and delete columns
+- [x] feat: Add table column
+- [ ] feat: Delete table column
 - [ ] feat: Create blank table >>> :TableCreate 3*4

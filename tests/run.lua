@@ -99,6 +99,20 @@ function tests.escaped_pipe_is_delimiter()
   equal(result, { [[| a\  | b   |]], "| --- | --- |" })
 end
 
+function tests.cursor_column_resolution()
+  local line = "| first | second | third |"
+  equal(parser.column_at(line, 0), 1)
+  equal(parser.column_at(line, 4), 1)
+  equal(parser.column_at(line, 8), 2)
+  equal(parser.column_at(line, 9), 2)
+  equal(parser.column_at(line, 16), 2)
+  equal(parser.column_at(line, 17), 3)
+  equal(parser.column_at(line, line:find("| second |", 1, true) - 1), 2)
+  equal(parser.column_at("first | second", 0), 1)
+  equal(parser.column_at("first | second", 6), 2)
+  equal(parser.column_at("first | second", 14), 2)
+end
+
 function tests.idempotency()
   for _, fixture in ipairs({ basic, cjk, example, { "|ab||X|", "|:---:|:---|---:|", "|z||1|" } }) do
     local once = formatted(fixture)
@@ -315,6 +329,125 @@ function tests.row_edit_isolation_and_undo()
     assert(api.format())
     equal(vim.api.nvim_buf_get_lines(0, 0, -1, false), before_format)
   end
+end
+
+function tests.add_column_cursor_boundaries()
+  for _, pipes in ipairs({ { "|", "|" }, { "", "" }, { "|", "" }, { "", "|" } }) do
+    local input = {
+      pipes[1] .. "A|B|C" .. pipes[2],
+      pipes[1] .. "---|---|---" .. pipes[2],
+      pipes[1] .. "1|2|3" .. pipes[2],
+    }
+    for row, line in ipairs(input) do
+      for _, case in ipairs({
+        { col = 0, added = 2 },
+        { col = line:find("|", #pipes[1] + 1, true) - 1, added = 3 },
+        { col = #line - 1, added = 4 },
+      }) do
+        set_buffer(input, row, case.col)
+        assert(api.add_column())
+        local expected = {
+          { "A", "B", "C" }, { "---", "---", "---" }, { "1", "2", "3" },
+        }
+        local expected_lines = {}
+        for row_index, cells in ipairs(expected) do
+          table.insert(cells, case.added, row_index == 2 and "---" or "")
+          expected_lines[row_index] = "|" .. table.concat(cells, "|") .. "|"
+        end
+        local result = vim.api.nvim_buf_get_lines(0, 0, -1, false)
+        equal(result, formatted(expected_lines))
+        local pipe = 0
+        for _ = 1, case.added do
+          pipe = result[row]:find("|", pipe + 1, true)
+        end
+        equal(vim.api.nvim_win_get_cursor(0), { row, pipe + 1 })
+      end
+    end
+  end
+end
+
+function tests.add_columns()
+  equal(vim.fn.exists(":TableAddColumn"), 2)
+  equal(type(api.add_column), "function")
+  local input = { "|Name|Center|Price|", "|:---|:---:|---:|", "|Alice|x|20|", "|日本語|y|30|" }
+  local input_rows = assert(parser.parse(input)).rows
+  for _, case in ipairs({
+    { row = 1, col = 2, added = 2, alignments = {
+      { left = true, right = false }, { left = false, right = false },
+      { left = true, right = true }, { left = false, right = true },
+    } },
+    { row = 3, col = 7, added = 3, alignments = {
+      { left = true, right = false }, { left = true, right = true },
+      { left = false, right = false }, { left = false, right = true },
+    } },
+    { row = 4, col = 13, added = 4, alignments = {
+      { left = true, right = false }, { left = true, right = true },
+      { left = false, right = true }, { left = false, right = false },
+    } },
+  }) do
+    set_buffer(input, case.row, case.col)
+    if case.row == 1 then
+      vim.cmd("TableAddColumn")
+    else
+      assert(api.add_column())
+    end
+
+    local result = vim.api.nvim_buf_get_lines(0, 0, -1, false)
+    local parsed = assert(parser.parse(result))
+    for _, buffer_row in ipairs({ 1, 3, 4 }) do
+      local original = vim.deepcopy(input_rows[buffer_row])
+      table.insert(original, case.added, "")
+      equal(parsed.rows[buffer_row], original)
+    end
+    equal(parsed.alignments, case.alignments)
+    equal(vim.api.nvim_win_get_cursor(0)[1], case.row)
+    local inserted_pipe = 0
+    for _ = 1, case.added do
+      inserted_pipe = result[case.row]:find("|", inserted_pipe + 1, true)
+    end
+    local next_pipe = result[case.row]:find("|", inserted_pipe + 1, true)
+    local cursor_col = vim.api.nvim_win_get_cursor(0)[2]
+    equal(cursor_col, inserted_pipe + 1)
+    assert(cursor_col < next_pipe)
+    equal(formatted(result), result)
+    assert_pipes_align(result)
+  end
+
+  local two_columns = { "|A|B|", "|---|---|", "|1|2|" }
+  set_buffer(two_columns, 3, 0)
+  vim.cmd("let &undolevels = &undolevels")
+  assert(api.add_column())
+  local result = vim.api.nvim_buf_get_lines(0, 0, -1, false)
+  equal(vim.list_slice(result, 1, 3), {
+    "| A   |     | B   |", "| --- | --- | --- |", "| 1   |     | 2   |",
+  })
+  vim.cmd("undo")
+  equal(vim.api.nvim_buf_get_lines(0, 0, -1, false), two_columns)
+end
+
+function tests.add_column_errors()
+  local original_notify = vim.notify
+  local notifications = {}
+  vim.notify = function(message, level)
+    notifications[#notifications + 1] = { message, level }
+  end
+  local ok, err = pcall(function()
+    for _, invalid in ipairs({
+      { "|A|B|", "|---|---|", "|1|" },
+      { "|A|", "|--|" },
+    }) do
+      set_buffer(invalid, #invalid)
+      assert(not api.add_column())
+      equal(vim.api.nvim_buf_get_lines(0, 0, -1, false), invalid)
+      equal(notifications[#notifications], { "Invalid Markdown table.", vim.log.levels.WARN })
+    end
+    set_buffer({ "outside" }, 1)
+    assert(not api.add_column())
+    equal(vim.api.nvim_buf_get_lines(0, 0, -1, false), { "outside" })
+    equal(notifications[#notifications], { "No Markdown table found at cursor.", vim.log.levels.WARN })
+  end)
+  vim.notify = original_notify
+  assert(ok, err)
 end
 
 local names = {}

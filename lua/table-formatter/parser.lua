@@ -23,6 +23,40 @@ function M.parse_row(line)
   return cells
 end
 
+function M.column_at(line, cursor_col)
+  local trimmed = vim.trim(line)
+  local pipe_positions = {}
+  local start = 1
+  while true do
+    local position = line:find("|", start, true)
+    if not position then
+      break
+    end
+    pipe_positions[#pipe_positions + 1] = position
+    start = position + 1
+  end
+
+  local has_leading_pipe = trimmed:sub(1, 1) == "|"
+  local has_trailing_pipe = trimmed:sub(-1) == "|"
+  local cursor_position = cursor_col + 1
+  if has_leading_pipe and cursor_position <= pipe_positions[1] then
+    return 1
+  end
+  if has_trailing_pipe and cursor_position >= pipe_positions[#pipe_positions] then
+    return #pipe_positions - (has_leading_pipe and 1 or 0)
+  end
+
+  local column = 1
+  for _, position in ipairs(pipe_positions) do
+    if position <= cursor_position then
+      if not (has_leading_pipe and position == pipe_positions[1]) then
+        column = column + 1
+      end
+    end
+  end
+  return column
+end
+
 function M.validate(rows)
   if #rows < 2 then
     return nil, "Invalid Markdown table."
