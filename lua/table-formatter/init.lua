@@ -135,6 +135,58 @@ function M.add_column()
   return true
 end
 
+function M.delete_column()
+  local buffer = vim.api.nvim_get_current_buf()
+  local cursor = vim.api.nvim_win_get_cursor(0)
+  local lines = vim.api.nvim_buf_get_lines(buffer, 0, -1, false)
+  local first, last = detector.find(lines, cursor[1])
+  if not first then
+    vim.notify(last, vim.log.levels.WARN)
+    return false
+  end
+
+  local table_lines = {}
+  for i = first, last do
+    table_lines[#table_lines + 1] = lines[i]
+  end
+  local table_data, err = parser.parse(table_lines)
+  if not table_data then
+    vim.notify(err, vim.log.levels.WARN)
+    return false
+  end
+
+  local column = parser.column_at(lines[cursor[1]], cursor[2])
+  if #table_data.rows[1] == 1 then
+    vim.notify("Cannot delete the last table column.", vim.log.levels.WARN)
+    return false
+  end
+
+  for _, row in ipairs(table_data.rows) do
+    table.remove(row, column)
+  end
+
+  local output
+  output, err = formatter.format_rows(table_data.rows)
+  if not output then
+    vim.notify(err, vim.log.levels.WARN)
+    return false
+  end
+  local ok = pcall(vim.api.nvim_buf_set_lines, buffer, first - 1, last, false, output)
+  if not ok then
+    vim.notify("Could not edit Markdown table.", vim.log.levels.WARN)
+    return false
+  end
+
+  local row = cursor[1] - first + 1
+  local remaining_column = math.min(column, #table_data.rows[1])
+  local pipe = 0
+  for _ = 1, remaining_column do
+    pipe = output[row]:find("|", pipe + 1, true)
+  end
+  vim.api.nvim_win_set_cursor(0, { cursor[1], pipe + 1 })
+  return true
+end
+
 function M.add_row()
   return edit_row(true)
 end

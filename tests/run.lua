@@ -450,6 +450,128 @@ function tests.add_column_errors()
   assert(ok, err)
 end
 
+function tests.delete_column_cursor_boundaries()
+  for _, pipes in ipairs({ { "|", "|" }, { "", "" }, { "|", "" }, { "", "|" } }) do
+    local input = {
+      pipes[1] .. "A|B|C" .. pipes[2],
+      pipes[1] .. "---|---|---" .. pipes[2],
+      pipes[1] .. "1|2|3" .. pipes[2],
+    }
+    for row, line in ipairs(input) do
+      for _, case in ipairs({
+        { col = 0, deleted = 1, remaining = 1 },
+        { col = line:find("|", #pipes[1] + 1, true) - 1, deleted = 2, remaining = 2 },
+        { col = #line - 1, deleted = 3, remaining = 2 },
+      }) do
+        set_buffer(input, row, case.col)
+        assert(api.delete_column())
+        local expected = {
+          { "A", "B", "C" }, { "---", "---", "---" }, { "1", "2", "3" },
+        }
+        local expected_lines = {}
+        for row_index, cells in ipairs(expected) do
+          table.remove(cells, case.deleted)
+          expected_lines[row_index] = "|" .. table.concat(cells, "|") .. "|"
+        end
+        local result = vim.api.nvim_buf_get_lines(0, 0, -1, false)
+        equal(result, formatted(expected_lines))
+        local pipe = 0
+        for _ = 1, case.remaining do
+          pipe = result[row]:find("|", pipe + 1, true)
+        end
+        equal(vim.api.nvim_win_get_cursor(0), { row, pipe + 1 })
+      end
+    end
+  end
+end
+
+function tests.delete_columns()
+  equal(vim.fn.exists(":TableDeleteColumn"), 2)
+  equal(type(api.delete_column), "function")
+  local input = { "|Name|Center|Price|", "|:---|:---:|---:|", "|Alice|x|20|", "|日本語|y|30|" }
+  local input_rows = assert(parser.parse(input)).rows
+  for _, case in ipairs({
+    { row = 1, col = 2, deleted = 1, alignments = {
+      { left = true, right = true }, { left = false, right = true },
+    } },
+    { row = 3, col = 7, deleted = 2, alignments = {
+      { left = true, right = false }, { left = false, right = true },
+    } },
+    { row = 4, col = 15, deleted = 3, alignments = {
+      { left = true, right = false }, { left = true, right = true },
+    } },
+  }) do
+    set_buffer(input, case.row, case.col)
+    if case.row == 1 then
+      vim.cmd("TableDeleteColumn")
+    else
+      assert(api.delete_column())
+    end
+
+    local result = vim.api.nvim_buf_get_lines(0, 0, -1, false)
+    local parsed = assert(parser.parse(result))
+    for _, buffer_row in ipairs({ 1, 3, 4 }) do
+      local original = vim.deepcopy(input_rows[buffer_row])
+      table.remove(original, case.deleted)
+      equal(parsed.rows[buffer_row], original)
+    end
+    equal(parsed.alignments, case.alignments)
+    equal(vim.api.nvim_win_get_cursor(0)[1], case.row)
+    local target_column = math.min(case.deleted, #parsed.rows[1])
+    local target_pipe = 0
+    for _ = 1, target_column do
+      target_pipe = result[case.row]:find("|", target_pipe + 1, true)
+    end
+    equal(vim.api.nvim_win_get_cursor(0)[2], target_pipe + 1)
+    equal(formatted(result), result)
+    assert_pipes_align(result)
+  end
+
+  local two_columns = { "|A|B|", "|---|---|", "|1|2|" }
+  set_buffer(two_columns, 3, 0)
+  vim.cmd("let &undolevels = &undolevels")
+  assert(api.delete_column())
+  equal(vim.api.nvim_buf_get_lines(0, 0, -1, false), {
+    "| B   |", "| --- |", "| 2   |",
+  })
+  vim.cmd("undo")
+  equal(vim.api.nvim_buf_get_lines(0, 0, -1, false), two_columns)
+end
+
+function tests.delete_column_errors()
+  local original_notify = vim.notify
+  local notifications = {}
+  vim.notify = function(message, level)
+    notifications[#notifications + 1] = { message, level }
+  end
+  local ok, err = pcall(function()
+    local only_column = { "|A|", "|---|", "|x|" }
+    set_buffer(only_column, 3)
+    assert(not api.delete_column())
+    equal(vim.api.nvim_buf_get_lines(0, 0, -1, false), only_column)
+    equal(notifications[#notifications], {
+      "Cannot delete the last table column.", vim.log.levels.WARN,
+    })
+
+    for _, invalid in ipairs({
+      { "|A|B|", "|---|---|", "|1|" },
+      { "|A|", "|--|" },
+    }) do
+      set_buffer(invalid, #invalid)
+      assert(not api.delete_column())
+      equal(vim.api.nvim_buf_get_lines(0, 0, -1, false), invalid)
+      equal(notifications[#notifications], { "Invalid Markdown table.", vim.log.levels.WARN })
+    end
+
+    set_buffer({ "outside" }, 1)
+    assert(not api.delete_column())
+    equal(vim.api.nvim_buf_get_lines(0, 0, -1, false), { "outside" })
+    equal(notifications[#notifications], { "No Markdown table found at cursor.", vim.log.levels.WARN })
+  end)
+  vim.notify = original_notify
+  assert(ok, err)
+end
+
 local names = {}
 for name in pairs(tests) do
   names[#names + 1] = name

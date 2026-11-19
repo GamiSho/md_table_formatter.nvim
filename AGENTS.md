@@ -20,9 +20,6 @@ Implemented and expected to remain working:
 - Add a table row.
 - Delete a table row.
 - Add a table column.
-
-Not implemented yet:
-
 - Delete a table column.
 
 ## Important design rules
@@ -47,21 +44,15 @@ Existing formatting entry points:
 - `:TableFormat`
 - `require("table-formatter").format()`
 
-Structural editing should follow the same architecture and expose commands and corresponding public Lua APIs. Row add/delete and column insertion are current capabilities. Column deletion is the next planned feature.
+Structural editing should follow the same architecture and expose commands and corresponding public Lua APIs. Row add/delete and column add/delete are current capabilities.
 
-## Current next task
+## Column deletion behavior
 
-Implement column deletion without regressing formatting, row editing, or column insertion.
-
-Preferred behavior:
-
-- Delete column: delete the column containing the cursor from header, separator, and every body row.
+- Delete the column containing the cursor from header, separator, and every body row.
 - Do not allow deleting the only remaining column.
 - Determine the current logical cell/column from the cursor position rather than requiring a numeric column argument.
 - After a successful structural edit, run the common canonical formatting path.
 - Preserve the cursor inside the same logical table and as close as practical to the edited column.
-
-Before implementing, verify these details against the current tests and repository conventions. Do not change existing public behavior merely to simplify the new implementation.
 
 ## Unsupported/non-goal behavior
 

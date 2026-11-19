@@ -188,7 +188,7 @@ require("table-formatter").add_column()
 
 ### 8.4 Delete column
 
-Planned capability.
+Current capability.
 
 Requirements:
 
@@ -197,7 +197,8 @@ Requirements:
 - Do not allow deleting the last remaining column.
 - Preserve other column content and alignment semantics.
 - Reformat the complete table after deletion.
-- Keep the cursor on the same logical row and clamp/move it to a valid remaining column as needed.
+- Keep the cursor on the same logical row and move it to the next column when
+  available, or the previous column when deleting the last column.
 
 Recommended command/API names:
 
@@ -314,18 +315,18 @@ Structural editing tests must cover each row/column operation, including:
 
 Column editing is complete when all of the following are true:
 
-- [ ] Cursor column can be resolved reliably for a supported valid table.
-- [ ] Add-column inserts immediately to the right of the current column.
-- [ ] New header/body cells are empty.
-- [ ] The new separator cell has valid plain-left alignment.
-- [ ] Delete-column deletes the current logical column from all rows.
-- [ ] The only remaining column cannot be deleted.
-- [ ] Existing alignment semantics in unaffected columns remain unchanged.
-- [ ] CJK-aware formatter behavior remains correct.
-- [ ] The complete table is replaced atomically.
-- [ ] Invalid operations leave the buffer unchanged.
-- [ ] Cursor behavior is controlled and tested.
-- [ ] Public commands and Lua APIs delegate to common implementation paths.
-- [ ] Existing format and row-edit tests still pass.
-- [ ] No runtime dependency is added.
-- [ ] README/agent documentation reflects public behavior.
+- [x] Cursor column can be resolved reliably for a supported valid table.
+- [x] Add-column inserts immediately to the right of the current column.
+- [x] New header/body cells are empty.
+- [x] The new separator cell has valid plain-left alignment.
+- [x] Delete-column deletes the current logical column from all rows.
+- [x] The only remaining column cannot be deleted.
+- [x] Existing alignment semantics in unaffected columns remain unchanged.
+- [x] CJK-aware formatter behavior remains correct.
+- [x] The complete table is replaced atomically.
+- [x] Invalid operations leave the buffer unchanged.
+- [x] Cursor behavior is controlled and tested.
+- [x] Public commands and Lua APIs delegate to common implementation paths.
+- [x] Existing format and row-edit tests still pass.
+- [x] No runtime dependency is added.
+- [x] README/agent documentation reflects public behavior.
