@@ -253,7 +253,7 @@ Capture before mutation:
 
 After mutation:
 
-- restore the same logical row where possible;
+- for formatting and column edits, restore the same logical row where possible; row edits retain their operation-specific cursor behavior;
 - for add-column, prefer the inserted/new column or a position immediately adjacent according to current UX conventions;
 - for delete-column, prefer the nearest remaining column;
 - clamp byte column to a valid location.
@@ -329,7 +329,7 @@ Use integration tests for:
 - correct target table detection when multiple tables exist;
 - one-range buffer replacement;
 - no mutation on invalid input;
-- same logical cursor row after operation;
+- same logical cursor row after formatting or column edits, while preserving operation-specific row-edit behavior;
 - CJK display-width formatting after structural editing.
 
 ## 14. Change strategy for column editing

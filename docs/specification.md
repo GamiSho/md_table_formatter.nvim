@@ -214,7 +214,7 @@ require("table-formatter").delete_column()
 After a successful operation:
 
 - Keep the cursor inside the same logical table.
-- Keep it on the same logical row when possible.
+- For formatting and column edits, keep it on the same logical row when possible; row edits retain their operation-specific cursor behavior.
 - Clamp the byte column to a valid line position if output becomes shorter.
 - For structural edits, keep the cursor close to the affected row/column.
 
