@@ -272,6 +272,7 @@ Expected set after column editing is complete:
 :TableDeleteRow
 :TableAddColumn
 :TableDeleteColumn
+:TableCreate {rows}x{columns}
 ```
 
 Corresponding API shape:
@@ -284,9 +285,12 @@ table_formatter.add_row()
 table_formatter.delete_row()
 table_formatter.add_column()
 table_formatter.delete_column()
+table_formatter.create(rows, columns)
 ```
 
 Names should match the repository's existing row-editing APIs if they differ.
+Creation builds rows in the same model, formats them with the common formatter,
+and inserts the result before the cursor line in one buffer operation.
 
 ## 12. Error boundary
 

@@ -4,6 +4,42 @@ local parser = require("table-formatter.parser")
 
 local M = {}
 
+function M.create(rows, columns)
+  local function positive_integer(value)
+    return type(value) == "number" and value > 0 and value < math.huge and value == math.floor(value)
+  end
+
+  if not positive_integer(rows) or not positive_integer(columns) then
+    vim.notify("Table dimensions must be positive integers.", vim.log.levels.WARN)
+    return false
+  end
+
+  local table_rows = {}
+  for row = 1, rows + 2 do
+    local cells = {}
+    for column = 1, columns do
+      cells[column] = row == 2 and "---" or ""
+    end
+    table_rows[row] = cells
+  end
+
+  local output, err = formatter.format_rows(table_rows)
+  if not output then
+    vim.notify(err, vim.log.levels.WARN)
+    return false
+  end
+
+  local buffer = vim.api.nvim_get_current_buf()
+  local cursor = vim.api.nvim_win_get_cursor(0)
+  local ok = pcall(vim.api.nvim_buf_set_lines, buffer, cursor[1] - 1, cursor[1] - 1, false, output)
+  if not ok then
+    vim.notify("Could not create Markdown table.", vim.log.levels.WARN)
+    return false
+  end
+  vim.api.nvim_win_set_cursor(0, { cursor[1], 2 })
+  return true
+end
+
 function M.format()
   local buffer = vim.api.nvim_get_current_buf()
   local cursor = vim.api.nvim_win_get_cursor(0)

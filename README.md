@@ -39,6 +39,21 @@ The command works regardless of buffer filetype. It formats only the contiguous
 table under the cursor, preserves the cursor's row, and leaves invalid tables
 unchanged with a warning.
 
+### Creating a table
+
+`:TableCreate 2x3` inserts a blank table before the current line, with two body
+rows and three columns, plus a header and separator. Both dimensions must be
+positive decimal integers. The cursor moves to the first header cell.
+
+The equivalent Lua API is:
+
+```lua
+require("table-formatter").create(2, 3)
+```
+
+Creation works with any filetype and can be undone with one `u`. Invalid
+dimensions leave the buffer unchanged with a warning.
+
 ### Editing rows
 
 `:TableAddRow` inserts an empty row below the current body row. From the header
@@ -137,4 +152,4 @@ display columns and idempotency.
 - [x] feat: Insert and delete rows
 - [x] feat: Add table column
 - [x] feat: Delete table column
-- [ ] feat: Create blank table
+- [x] feat: Create blank table

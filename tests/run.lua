@@ -144,6 +144,110 @@ local function set_buffer(lines, row, col)
   vim.api.nvim_win_set_cursor(0, { row, col or 0 })
 end
 
+function tests.create_tables()
+  equal(vim.fn.exists(":TableCreate"), 2)
+  equal(type(api.create), "function")
+  local input = { "Before", "日本語", "After" }
+  for _, case in ipairs({
+    { rows = 1, columns = 1, cursor = 1, filetype = "markdown", command = true },
+    { rows = 1, columns = 3, cursor = 2, filetype = "text" },
+    { rows = 3, columns = 1, cursor = 3, filetype = "gitcommit" },
+    { rows = 2, columns = 3, cursor = 2, filetype = "" },
+  }) do
+    set_buffer(input, case.cursor)
+    vim.bo.filetype = case.filetype
+    if case.command then
+      vim.cmd(("TableCreate %dx%d"):format(case.rows, case.columns))
+    else
+      assert(api.create(case.rows, case.columns))
+    end
+    local result = vim.api.nvim_buf_get_lines(0, 0, -1, false)
+    local table_lines = vim.list_slice(result, case.cursor, case.cursor + case.rows + 1)
+    equal(#table_lines, case.rows + 2)
+    local parsed = assert(parser.parse(table_lines))
+    for row_index, cells in ipairs(parsed.rows) do
+      equal(#cells, case.columns)
+      for _, cell in ipairs(cells) do
+        equal(cell, row_index == 2 and "---" or "")
+      end
+    end
+    for _, alignment in ipairs(parsed.alignments) do
+      equal(alignment, { left = false, right = false })
+    end
+    equal(formatted(table_lines), table_lines)
+    equal(vim.api.nvim_win_get_cursor(0), { case.cursor, 2 })
+    for i, line in ipairs(input) do
+      equal(result[i < case.cursor and i or i + case.rows + 2], line)
+    end
+  end
+
+  set_buffer({ "before", "after" }, 2)
+  vim.cmd("let &undolevels = &undolevels")
+  vim.cmd("TableCreate 2x3")
+  equal(vim.api.nvim_buf_get_lines(0, 0, -1, false), {
+    "before", "|     |     |     |", "| --- | --- | --- |",
+    "|     |     |     |", "|     |     |     |", "after",
+  })
+  vim.cmd("undo")
+  equal(vim.api.nvim_buf_get_lines(0, 0, -1, false), { "before", "after" })
+
+  set_buffer({ "tail" }, 1)
+  assert(api.create(1, 2))
+  vim.api.nvim_buf_set_lines(0, 0, 1, false, { "|日本語|x|" })
+  assert(api.format())
+  local result = vim.api.nvim_buf_get_lines(0, 0, 3, false)
+  assert_pipes_align(result)
+  equal(formatted(result), result)
+end
+
+function tests.create_table_errors()
+  local original_notify = vim.notify
+  local notifications = {}
+  vim.notify = function(message, level)
+    notifications[#notifications + 1] = { message, level }
+  end
+  local ok, err = pcall(function()
+    local input = { "before", "日本語", "after" }
+    for _, args in ipairs({
+      "", "0x1", "1x0", "-1x2", "1x-2", "1x", "x1", "1", "axb",
+      "1X2", "1x2x3", "1.5x2", "1x2 extra", "1e2x3", "1x2.0",
+      string.rep("9", 400) .. "x1",
+    }) do
+      set_buffer(input, 2)
+      local count = #notifications
+      vim.cmd("TableCreate " .. args)
+      equal(#notifications, count + 1)
+      equal(notifications[#notifications], {
+        "Table dimensions must be positive integers.", vim.log.levels.WARN,
+      })
+      equal(vim.api.nvim_buf_get_lines(0, 0, -1, false), input)
+      equal(vim.api.nvim_win_get_cursor(0), { 2, 0 })
+    end
+    for _, args in ipairs({
+      { 0, 1 }, { 1, 0 }, { -1, 1 }, { 1, -1 }, { 1.5, 1 },
+      { "1", 1 }, { 1, "2" }, { true, 1 }, { math.huge, 1 }, { 0 / 0, 1 },
+    }) do
+      set_buffer(input, 2)
+      assert(not api.create(args[1], args[2]))
+      equal(vim.api.nvim_buf_get_lines(0, 0, -1, false), input)
+      equal(notifications[#notifications], {
+        "Table dimensions must be positive integers.", vim.log.levels.WARN,
+      })
+    end
+    assert(not api.create())
+    equal(vim.api.nvim_buf_get_lines(0, 0, -1, false), input)
+
+    vim.bo.modifiable = false
+    assert(not api.create(1, 1))
+    equal(vim.api.nvim_buf_get_lines(0, 0, -1, false), input)
+    equal(notifications[#notifications], { "Could not create Markdown table.", vim.log.levels.WARN })
+    vim.bo.modifiable = true
+  end)
+  vim.bo.modifiable = true
+  vim.notify = original_notify
+  assert(ok, err)
+end
+
 function tests.integration()
   equal(vim.fn.exists(":TableFormat"), 2)
   equal(type(api.format), "function")
