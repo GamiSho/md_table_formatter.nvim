@@ -210,6 +210,82 @@ Recommended command/API names:
 require("table-formatter").delete_column()
 ```
 
+### 8.5 Reset row contents
+
+New capability.
+
+#### Command
+
+`:TableResetRow`
+
+#### Lua API
+
+```lua
+require("table-formatter").reset\_row()
+```
+
+Requirements:
+
+* Operate on the valid table containing the cursor.
+* Allow the operation only when the cursor is on a body row.
+* Replace the content of every cell in the current body row with an empty cell.
+* Preserve the row itself and preserve the table's column count.
+* Do not modify the header row or separator row.
+* Preserve all separator alignment semantics.
+* Reformat the complete table through the common canonical formatter after resetting the row.
+* Keep the cursor on the same logical body row and, where practical, in the same logical column.
+* Perform the complete table replacement atomically so the operation can be undone as one change.
+* If the cursor is on the header or separator row, report a controlled warning and leave the buffer unchanged.
+* If the table is invalid, report a controlled warning and leave the buffer unchanged.
+
+`TableResetRow` is distinct from deleting a line with Neovim's `dd`: it preserves the body row and clears only its cell contents.
+
+### 8.6 Create blank table
+
+New capability.
+
+#### Command
+
+`:TableCreate {rows}x{columns}`
+
+Example:
+
+```vim
+:TableCreate 2x3
+```
+
+The example creates one header row, one separator row, and two empty body rows with three columns:
+
+```markdown
+|   |   |   |
+| --- | --- | --- |
+|   |   |   |
+|   |   |   |
+```
+
+#### Lua API
+
+```lua
+require("table-formatter").create(rows, columns)
+```
+
+Requirements:
+
+* Parse the command argument in the form `{rows}x{columns}`.
+* Treat `rows` as the number of body rows, excluding the header and separator rows.
+* Treat `columns` as the number of table columns.
+* Require both values to be positive base-10 integers.
+* Reject zero, negative, missing, non-numeric, or malformed values with a controlled warning.
+* Create one empty header row.
+* Create one valid separator row using plain left alignment for every column.
+* Create exactly the requested number of empty body rows.
+* Generate the table through the common table model and canonical formatter rather than constructing a separate formatting path.
+* Insert the complete generated table at the current cursor line using one atomic buffer operation.
+* Do not require a Markdown filetype.
+* Place the cursor in the first header cell after successful creation.
+* Do not add a default key mapping.
+* Add no external runtime dependency.
+
 ## 9. Cursor behavior
 
 After a successful operation:
@@ -278,38 +354,34 @@ The current scope does not include:
 - Whole-buffer table formatting.
 - Default key mappings.
 
-## 14. Test requirements
+## 14.1 Additional structural editing tests
 
-The automated test suite should continue to cover formatting behavior including:
+The automated test suite must also cover row reset and blank-table creation.
 
-- basic formatting;
-- plain and explicit left alignment;
-- center alignment and odd padding;
-- right alignment;
-- empty cells;
-- CJK display width;
-- invalid column count;
-- missing separator;
-- cursor outside a table;
-- multiple tables and surrounding text isolation;
-- idempotency;
-- header-only table;
-- filetype independence;
-- documented escaped-pipe limitation.
+Row-reset tests:
 
-Structural editing tests must cover each row/column operation, including:
+* reset a body row at the first, middle, and last body position;
+* replace every cell in the target row with an empty cell;
+* preserve the row count and column count;
+* preserve header content, other body rows, and separator alignment semantics;
+* reject reset attempts on the header or separator row;
+* leave invalid tables unchanged;
+* preserve the logical cursor row and column where practical;
+* verify integration through `:TableResetRow` and `reset\_row()`;
+* verify post-operation canonical formatting and one-step undo behavior;
+* cover CJK content in the reset row and unaffected rows.
 
-- successful mutation;
-- first/middle/last applicable positions;
-- preservation of other cell content;
-- alignment preservation;
-- empty-cell creation for add operations;
-- invalid/protected delete operations;
-- atomic no-change behavior on failure;
-- cursor behavior;
-- integration through user command and Lua API;
-- post-edit canonical formatting;
-- CJK tables where relevant.
+Blank-table creation tests:
+
+* create tables with representative dimensions, including `1x1`, `1x3`, and `3x1`;
+* verify that `rows` counts body rows and `columns` counts table columns;
+* verify empty header and body cells;
+* verify plain-left separator semantics for every column;
+* reject zero, negative, missing, non-numeric, and malformed dimensions;
+* confirm that failed creation leaves the buffer unchanged;
+* verify insertion at the cursor line and cursor placement in the first header cell;
+* verify integration through `:TableCreate` and `create(rows, columns)`;
+* verify canonical formatting, CJK-aware formatter compatibility, filetype independence, and one-step undo behavior.
 
 ## 15. Acceptance criteria for column editing
 
@@ -330,3 +402,35 @@ Column editing is complete when all of the following are true:
 - [x] Existing format and row-edit tests still pass.
 - [x] No runtime dependency is added.
 - [x] README/agent documentation reflects public behavior.
+
+## 16. Acceptance criteria for row reset
+
+Row reset is complete when all of the following are true:
+
+* `:TableResetRow` and `reset\_row()` are available.
+* The current body row remains present and all of its cells become empty.
+* The header, separator, other body rows, column count, and alignment semantics remain unchanged.
+* Header-row and separator-row reset attempts are rejected without buffer modification.
+* Invalid tables remain unchanged.
+* The complete table is replaced atomically and formatted canonically.
+* Cursor behavior is controlled and tested.
+* No runtime dependency is added.
+* README and agent documentation reflect the public behavior.
+
+## 17. Acceptance criteria for blank-table creation
+
+Blank-table creation is complete when all of the following are true:
+
+* `:TableCreate {rows}x{columns}` and `create(rows, columns)` are available.
+* The command creates exactly one header row, one separator row, and the requested number of body rows.
+* Every generated row has exactly the requested number of columns.
+* All header and body cells are empty.
+* Every separator cell uses valid plain-left alignment.
+* Invalid dimensions are rejected without buffer modification.
+* The generated table uses the common table model and canonical formatter.
+* The table is inserted atomically at the cursor line and can be undone in one change.
+* The cursor moves to the first header cell.
+* The operation is independent of buffer filetype.
+* No runtime dependency is added.
+* README and agent documentation reflect the public behavior.
+
