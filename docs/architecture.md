@@ -202,7 +202,7 @@ Given valid model `M` and current zero/one-based column `c`:
 1. Compute insertion index `c + 1` (right side).
 2. Insert an empty header cell.
 3. Insert an empty cell in every body row.
-4. Insert a new alignment descriptor for plain left alignment.
+4. Insert a plain-left separator cell (`---`) in the separator row and update any alignment metadata.
 5. Preserve all existing alignment descriptors unchanged.
 6. Format the resulting table with the common formatter.
 
@@ -214,7 +214,7 @@ Given valid model `M` and current column `c`:
 
 1. Reject if `column_count == 1`.
 2. Remove cell `c` from the header and every body row.
-3. Remove the corresponding alignment descriptor.
+3. Remove cell `c` from the separator row and update any alignment metadata.
 4. Format the resulting model using the common formatter.
 
 Failure must occur before any buffer write.

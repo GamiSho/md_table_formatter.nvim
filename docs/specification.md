@@ -90,8 +90,8 @@ Japanese, Chinese, Korean, and mixed ASCII/CJK cells must produce aligned pipe c
 When a table operation is invoked:
 
 1. Start from the current cursor line.
-2. Identify the contiguous candidate block containing the cursor.
-3. Stop at blank or non-table lines.
+2. Identify the contiguous candidate block containing the cursor; each candidate line must contain at least two `|` characters.
+3. Stop at blank lines or lines with fewer than two `|` characters. Prose with two or more pipes may be included in the candidate.
 4. Parse the candidate rows.
 5. Validate the complete table.
 6. Do not modify the buffer if validation fails.
