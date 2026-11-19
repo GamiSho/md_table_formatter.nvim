@@ -43,7 +43,8 @@ unchanged with a warning.
 
 `:TableCreate 2x3` inserts a blank table before the current line, with two body
 rows and three columns, plus a header and separator. Both dimensions must be
-positive decimal integers. The cursor moves to the first header cell.
+positive decimal integers no greater than 25. The cursor moves to the first
+header cell.
 
 The equivalent Lua API is:
 

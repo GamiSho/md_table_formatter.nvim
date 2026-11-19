@@ -274,7 +274,7 @@ Requirements:
 * Parse the command argument in the form `{rows}x{columns}`.
 * Treat `rows` as the number of body rows, excluding the header and separator rows.
 * Treat `columns` as the number of table columns.
-* Require both values to be positive base-10 integers.
+* Require both values to be positive base-10 integers no greater than 25.
 * Reject zero, negative, missing, non-numeric, or malformed values with a controlled warning.
 * Create one empty header row.
 * Create one valid separator row using plain left alignment for every column.
