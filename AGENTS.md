@@ -21,6 +21,8 @@ Implemented and expected to remain working:
 - Delete a table row.
 - Add a table column.
 - Delete a table column.
+- Create a blank table with `:TableCreate {rows}x{columns}` or
+  `require("table-formatter").create(rows, columns)`.
 
 ## Important design rules
 
