@@ -13,3 +13,7 @@ end, {})
 vim.api.nvim_create_user_command("TableAddColumn", function()
   require("table-formatter").add_column()
 end, {})
+
+vim.api.nvim_create_user_command("TableDeleteColumn", function()
+  require("table-formatter").delete_column()
+end, {})

@@ -75,20 +75,28 @@ vim.keymap.set("n", "<leader>tdr", "<cmd>TableDeleteRow<CR>", {
 column containing the cursor. The new column is left-aligned, and the cursor
 moves into it on the same table row.
 
+`:TableDeleteColumn` deletes the column containing the cursor. It cannot delete
+the only remaining column; after deletion, the cursor stays on the same row and
+moves to the nearest remaining column.
+
 The corresponding Lua API is:
 
 ```lua
 require("table-formatter").add_column()
+require("table-formatter").delete_column()
 ```
 
-The operation validates and reformats the entire table before replacing it,
-preserves existing column alignment, and can be undone with one `u`.
-Invalid tables are left unchanged with a warning. No default mapping is
-installed; an optional mapping is:
+Both operations validate and reformat the entire table before replacing it,
+preserve the unaffected columns' alignment, and can each be undone with one
+`u`. Invalid tables and attempts to delete the last column are left unchanged
+with a warning. No default mappings are installed; optional mappings are:
 
 ```lua
 vim.keymap.set("n", "<leader>tac", "<cmd>TableAddColumn<CR>", {
   desc = "Add Markdown table column",
+})
+vim.keymap.set("n", "<leader>tdc", "<cmd>TableDeleteColumn<CR>", {
+  desc = "Delete Markdown table column",
 })
 ```
 
@@ -129,5 +137,5 @@ display columns and idempotency.
 - [ ] feat: Edit table values
 - [x] feat: Insert and delete rows
 - [x] feat: Add table column
-- [ ] feat: Delete table column
+- [x] feat: Delete table column
 - [ ] feat: Create blank table >>> :TableCreate 3*4
