@@ -354,7 +354,7 @@ The current scope does not include:
 - Whole-buffer table formatting.
 - Default key mappings.
 
-## 14.1 Additional structural editing tests
+## 14. Additional structural editing tests
 
 The automated test suite must also cover row reset and blank-table creation.
 
