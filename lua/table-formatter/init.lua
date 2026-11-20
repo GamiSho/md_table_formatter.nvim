@@ -14,6 +14,11 @@ function M.create(rows, columns)
     return false
   end
 
+  if rows > 25 or columns > 25 then
+    vim.notify("Table dimensions must not exceed 25.", vim.log.levels.WARN)
+    return false
+  end
+
   local table_rows = {}
   for row = 1, rows + 2 do
     local cells = {}

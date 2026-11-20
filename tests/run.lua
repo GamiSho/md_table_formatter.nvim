@@ -153,6 +153,10 @@ function tests.create_tables()
     { rows = 1, columns = 3, cursor = 2, filetype = "text" },
     { rows = 3, columns = 1, cursor = 3, filetype = "gitcommit" },
     { rows = 2, columns = 3, cursor = 2, filetype = "" },
+    { rows = 25, columns = 25, cursor = 2, filetype = "", command = true },
+    { rows = 25, columns = 1, cursor = 2, filetype = "" },
+    { rows = 1, columns = 25, cursor = 2, filetype = "" },
+    { rows = 25, columns = 25, cursor = 2, filetype = "" },
   }) do
     set_buffer(input, case.cursor)
     vim.bo.filetype = case.filetype
@@ -233,6 +237,23 @@ function tests.create_table_errors()
       equal(notifications[#notifications], {
         "Table dimensions must be positive integers.", vim.log.levels.WARN,
       })
+    end
+    for _, args in ipairs({ { 26, 1 }, { 1, 26 }, { 26, 26 }, { 999999999, 1 }, { 1, 999999999 } }) do
+      for _, command in ipairs({ true, false }) do
+        set_buffer(input, 2)
+        local count = #notifications
+        if command then
+          vim.cmd(("TableCreate %dx%d"):format(args[1], args[2]))
+        else
+          assert(not api.create(args[1], args[2]))
+        end
+        equal(#notifications, count + 1)
+        equal(notifications[#notifications], {
+          "Table dimensions must not exceed 25.", vim.log.levels.WARN,
+        })
+        equal(vim.api.nvim_buf_get_lines(0, 0, -1, false), input)
+        equal(vim.api.nvim_win_get_cursor(0), { 2, 0 })
+      end
     end
     assert(not api.create())
     equal(vim.api.nvim_buf_get_lines(0, 0, -1, false), input)
