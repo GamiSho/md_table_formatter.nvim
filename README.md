@@ -147,10 +147,3 @@ nvim --headless -u NONE -c 'luafile tests/run.lua'
 
 The suite covers the formatting core and editor integration, including CJK
 display columns and idempotency.
-
-## Todo
-
-- [x] feat: Insert and delete rows
-- [x] feat: Add table column
-- [x] feat: Delete table column
-- [x] feat: Create blank table
