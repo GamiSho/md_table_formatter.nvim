@@ -212,7 +212,7 @@ require("table-formatter").delete_column()
 
 ### 8.5 Reset row contents
 
-New capability.
+Current capability.
 
 #### Command
 
@@ -221,24 +221,24 @@ New capability.
 #### Lua API
 
 ```lua
-require("table-formatter").reset\_row()
+require("table-formatter").reset_row()
 ```
 
 Requirements:
 
 * Operate on the valid table containing the cursor.
-* Allow the operation only when the cursor is on a body row.
-* Replace the content of every cell in the current body row with an empty cell.
+* Allow the operation when the cursor is on a header or body row.
+* Replace the content of every cell in the current row with an empty cell.
 * Preserve the row itself and preserve the table's column count.
-* Do not modify the header row or separator row.
+* Do not reset the separator row.
 * Preserve all separator alignment semantics.
 * Reformat the complete table through the common canonical formatter after resetting the row.
-* Keep the cursor on the same logical body row and, where practical, in the same logical column.
+* Keep the cursor on the same logical row and, where practical, in the same logical column.
 * Perform the complete table replacement atomically so the operation can be undone as one change.
-* If the cursor is on the header or separator row, report a controlled warning and leave the buffer unchanged.
+* If the cursor is on the separator row, report a controlled warning and leave the buffer unchanged.
 * If the table is invalid, report a controlled warning and leave the buffer unchanged.
 
-`TableResetRow` is distinct from deleting a line with Neovim's `dd`: it preserves the body row and clears only its cell contents.
+`TableResetRow` is distinct from deleting a line with Neovim's `dd`: it preserves the row and clears only its cell contents.
 
 ### 8.6 Create blank table
 
@@ -361,13 +361,14 @@ The automated test suite must also cover row reset and blank-table creation.
 Row-reset tests:
 
 * reset a body row at the first, middle, and last body position;
+* reset the header row;
 * replace every cell in the target row with an empty cell;
 * preserve the row count and column count;
-* preserve header content, other body rows, and separator alignment semantics;
-* reject reset attempts on the header or separator row;
+* preserve other rows' content and separator alignment semantics;
+* reject reset attempts on the separator row;
 * leave invalid tables unchanged;
 * preserve the logical cursor row and column where practical;
-* verify integration through `:TableResetRow` and `reset\_row()`;
+* verify integration through `:TableResetRow` and `reset_row()`;
 * verify post-operation canonical formatting and one-step undo behavior;
 * cover CJK content in the reset row and unaffected rows.
 
@@ -407,10 +408,10 @@ Column editing is complete when all of the following are true:
 
 Row reset is complete when all of the following are true:
 
-* `:TableResetRow` and `reset\_row()` are available.
-* The current body row remains present and all of its cells become empty.
-* The header, separator, other body rows, column count, and alignment semantics remain unchanged.
-* Header-row and separator-row reset attempts are rejected without buffer modification.
+* `:TableResetRow` and `reset_row()` are available.
+* The current header or body row remains present and all of its cells become empty.
+* Other rows' content, column count, and alignment semantics remain unchanged.
+* Separator-row reset attempts are rejected without buffer modification.
 * Invalid tables remain unchanged.
 * The complete table is replaced atomically and formatted canonically.
 * Cursor behavior is controlled and tested.
@@ -433,4 +434,3 @@ Blank-table creation is complete when all of the following are true:
 * The operation is independent of buffer filetype.
 * No runtime dependency is added.
 * README and agent documentation reflect the public behavior.
-

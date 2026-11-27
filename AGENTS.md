@@ -19,6 +19,7 @@ Implemented and expected to remain working:
 - Keep formatting idempotent.
 - Add a table row.
 - Delete a table row.
+- Reset a header or body row to empty cells; the separator row cannot be reset.
 - Add a table column.
 - Delete a table column.
 - Create a blank table with `:TableCreate {rows}x{columns}` or
@@ -46,7 +47,7 @@ Existing formatting entry points:
 - `:TableFormat`
 - `require("table-formatter").format()`
 
-Structural editing should follow the same architecture and expose commands and corresponding public Lua APIs. Row add/delete and column add/delete are current capabilities.
+Structural editing should follow the same architecture and expose commands and corresponding public Lua APIs. Row add/delete/reset and column add/delete are current capabilities. Row reset is available through `:TableResetRow` and `require("table-formatter").reset_row()`.
 
 ## Column deletion behavior
 

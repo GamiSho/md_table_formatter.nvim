@@ -76,7 +76,7 @@ function M.format()
   return true
 end
 
-local function edit_row(add)
+local function edit_row(operation)
   local buffer = vim.api.nvim_get_current_buf()
   local cursor = vim.api.nvim_win_get_cursor(0)
   local lines = vim.api.nvim_buf_get_lines(buffer, 0, -1, false)
@@ -98,20 +98,30 @@ local function edit_row(add)
 
   local rows = table_data.rows
   local row = cursor[1] - first + 1
-  if add then
+  local column
+  if operation == "add" then
     row = math.max(row, 2) + 1
     local cells = {}
     for i = 1, #rows[1] do
       cells[i] = ""
     end
     table.insert(rows, row, cells)
-  else
+  elseif operation == "delete" then
     if row <= 2 then
       vim.notify("Cannot delete the header or separator row.", vim.log.levels.WARN)
       return false
     end
     table.remove(rows, row)
     row = #rows == 2 and 1 or math.min(row, #rows)
+  else
+    if row == 2 then
+      vim.notify("Cannot reset the separator row.", vim.log.levels.WARN)
+      return false
+    end
+    column = parser.column_at(lines[cursor[1]], cursor[2])
+    for i = 1, #rows[row] do
+      rows[row][i] = ""
+    end
   end
 
   local output
@@ -125,7 +135,15 @@ local function edit_row(add)
     vim.notify("Could not edit Markdown table.", vim.log.levels.WARN)
     return false
   end
-  vim.api.nvim_win_set_cursor(0, { first + row - 1, 2 })
+  local cursor_col = 2
+  if column then
+    local pipe = 0
+    for _ = 1, column do
+      pipe = output[row]:find("|", pipe + 1, true)
+    end
+    cursor_col = math.min(pipe + 1, #output[row] - 1)
+  end
+  vim.api.nvim_win_set_cursor(0, { first + row - 1, cursor_col })
   return true
 end
 
@@ -229,11 +247,15 @@ function M.delete_column()
 end
 
 function M.add_row()
-  return edit_row(true)
+  return edit_row("add")
 end
 
 function M.delete_row()
-  return edit_row(false)
+  return edit_row("delete")
+end
+
+function M.reset_row()
+  return edit_row("reset")
 end
 
 return M

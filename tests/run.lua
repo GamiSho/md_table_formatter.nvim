@@ -398,6 +398,118 @@ function tests.delete_rows()
   equal(vim.api.nvim_win_get_cursor(0), { 1, 2 })
 end
 
+function tests.reset_rows()
+  equal(vim.fn.exists(":TableResetRow"), 2)
+  equal(type(api.reset_row), "function")
+  local input = {
+    "before",
+    "|Name|明示|中央|Price|",
+    "|---|:---|:---:|---:|",
+    "|first||日本語|123456789|",
+    "|middle|値|x|200|",
+    "|last|語|y|300|",
+    "",
+    "after",
+  }
+  for _, case in ipairs({
+    { row = 2, column = 2, command = true },
+    { row = 4, column = 4 },
+    { row = 5, column = 2 },
+    { row = 6, column = 3 },
+  }) do
+    local raw = input[case.row]
+    local pipe = 0
+    for _ = 1, case.column do
+      pipe = raw:find("|", pipe + 1, true)
+    end
+    set_buffer(input, case.row, pipe)
+    if case.command then
+      vim.cmd("TableResetRow")
+    else
+      assert(api.reset_row())
+    end
+    local result = vim.api.nvim_buf_get_lines(0, 0, -1, false)
+    equal(result[1], "before")
+    equal(result[7], "")
+    equal(result[8], "after")
+    local table_lines = vim.list_slice(result, 2, 6)
+    local parsed = assert(parser.parse(table_lines))
+    local original = assert(parser.parse(vim.list_slice(input, 2, 6)))
+    equal(#parsed.rows, #original.rows)
+    for index, cells in ipairs(parsed.rows) do
+      equal(#cells, 4)
+      if index == case.row - 1 then
+        equal(cells, { "", "", "", "" })
+      elseif index ~= 2 then
+        equal(cells, original.rows[index])
+      end
+    end
+    equal(parsed.alignments, original.alignments)
+    assert_pipes_align(table_lines)
+    equal(formatted(table_lines), table_lines)
+    local cursor = vim.api.nvim_win_get_cursor(0)
+    equal(cursor[1], case.row)
+    assert(cursor[2] < #result[case.row])
+    equal(parser.column_at(result[case.row], cursor[2]), case.column)
+    assert(api.format())
+    equal(vim.api.nvim_buf_get_lines(0, 0, -1, false), result)
+  end
+
+  set_buffer({ "|long content|", "|---|", "|x|" }, 1, 12)
+  assert(api.reset_row())
+  equal(vim.api.nvim_buf_get_lines(0, 0, -1, false), { "|     |", "| --- |", "| x   |" })
+  equal(vim.api.nvim_win_get_cursor(0)[1], 1)
+  equal(parser.column_at(vim.api.nvim_get_current_line(), vim.api.nvim_win_get_cursor(0)[2]), 1)
+
+  local unbordered = { "A|B|C", "---|---|---", "x||z" }
+  for _, col in ipairs({ 0, 1, 2, 3 }) do
+    set_buffer(unbordered, 3, col)
+    local column = parser.column_at(unbordered[3], col)
+    assert(api.reset_row())
+    equal(parser.column_at(vim.api.nvim_get_current_line(), vim.api.nvim_win_get_cursor(0)[2]), column)
+    equal(assert(parser.parse(vim.api.nvim_buf_get_lines(0, 0, -1, false))).rows[3], { "", "", "" })
+  end
+end
+
+function tests.reset_row_errors_and_undo()
+  local original_notify = vim.notify
+  local notifications = {}
+  vim.notify = function(message, level)
+    notifications[#notifications + 1] = { message, level }
+  end
+  local ok, err = pcall(function()
+    local valid = { "|A|B|", "|---|---|", "|x|y|" }
+    set_buffer(valid, 2)
+    assert(not api.reset_row())
+    equal(vim.api.nvim_buf_get_lines(0, 0, -1, false), valid)
+    equal(notifications[#notifications], { "Cannot reset the separator row.", vim.log.levels.WARN })
+    vim.cmd("TableResetRow")
+    equal(vim.api.nvim_buf_get_lines(0, 0, -1, false), valid)
+    equal(notifications[#notifications], { "Cannot reset the separator row.", vim.log.levels.WARN })
+    for _, invalid in ipairs({
+      { "|A|B|", "|---|---|", "|1|" },
+      { "|A|", "|--|", "|x|" },
+    }) do
+      set_buffer(invalid, #invalid)
+      assert(not api.reset_row())
+      equal(vim.api.nvim_buf_get_lines(0, 0, -1, false), invalid)
+      equal(notifications[#notifications], { "Invalid Markdown table.", vim.log.levels.WARN })
+    end
+    set_buffer({ "outside" }, 1)
+    assert(not api.reset_row())
+    equal(vim.api.nvim_buf_get_lines(0, 0, -1, false), { "outside" })
+    equal(notifications[#notifications], { "No Markdown table found at cursor.", vim.log.levels.WARN })
+
+    set_buffer(valid, 3)
+    vim.cmd("let &undolevels = &undolevels")
+    vim.cmd("TableResetRow")
+    vim.cmd("undo")
+    equal(vim.api.nvim_buf_get_lines(0, 0, -1, false), valid)
+  end)
+  vim.notify = original_notify
+  assert(ok, err)
+end
+
 function tests.row_edit_errors()
   local original_notify = vim.notify
   local notifications = {}

@@ -37,7 +37,7 @@ Neovim command / public Lua API
      +------+------+
      |             |
  formatter       editor
-     |        add/delete row
+     |        add/delete/reset row
      |        add/delete column
      |             |
      +------v------+
@@ -139,6 +139,7 @@ Recommended interface shape:
 ```lua
 editor.add_row(model, row_index)
 editor.delete_row(model, row_index)
+editor.reset_row(model, row_index)
 editor.add_column(model, column_index)
 editor.delete_column(model, column_index)
 ```
@@ -270,6 +271,7 @@ Expected set after column editing is complete:
 :TableFormat
 :TableAddRow
 :TableDeleteRow
+:TableResetRow
 :TableAddColumn
 :TableDeleteColumn
 :TableCreate {rows}x{columns}
@@ -283,6 +285,7 @@ local table_formatter = require("table-formatter")
 table_formatter.format()
 table_formatter.add_row()
 table_formatter.delete_row()
+table_formatter.reset_row()
 table_formatter.add_column()
 table_formatter.delete_column()
 table_formatter.create(rows, columns)
