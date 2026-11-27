@@ -15,6 +15,10 @@ vim.api.nvim_create_user_command("TableDeleteRow", function()
   require("table-formatter").delete_row()
 end, {})
 
+vim.api.nvim_create_user_command("TableResetRow", function()
+  require("table-formatter").reset_row()
+end, {})
+
 vim.api.nvim_create_user_command("TableAddColumn", function()
   require("table-formatter").add_column()
 end, {})
