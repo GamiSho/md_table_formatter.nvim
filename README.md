@@ -65,14 +65,19 @@ cell.
 be deleted. The cursor moves to the next body row, the previous body row if
 there is no next row, or the header if no body rows remain.
 
+`:TableResetRow` clears every cell in the current body or header row without
+deleting the row. The separator cannot be reset; attempting to do so leaves the
+table unchanged with a warning. The cursor stays on the same row and column.
+
 The corresponding Lua APIs are:
 
 ```lua
 require("table-formatter").add_row()
 require("table-formatter").delete_row()
+require("table-formatter").reset_row()
 ```
 
-Both operations validate the existing table, format the entire result, and can
+All row operations validate the existing table, format the entire result, and can
 each be undone with one `u`. Invalid tables are left unchanged with a warning.
 No default mappings are installed; optional mappings include:
 

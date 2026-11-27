@@ -460,6 +460,15 @@ function tests.reset_rows()
   equal(vim.api.nvim_buf_get_lines(0, 0, -1, false), { "|     |", "| --- |", "| x   |" })
   equal(vim.api.nvim_win_get_cursor(0)[1], 1)
   equal(parser.column_at(vim.api.nvim_get_current_line(), vim.api.nvim_win_get_cursor(0)[2]), 1)
+
+  local unbordered = { "A|B|C", "---|---|---", "x||z" }
+  for _, col in ipairs({ 0, 1, 2, 3 }) do
+    set_buffer(unbordered, 3, col)
+    local column = parser.column_at(unbordered[3], col)
+    assert(api.reset_row())
+    equal(parser.column_at(vim.api.nvim_get_current_line(), vim.api.nvim_win_get_cursor(0)[2]), column)
+    equal(assert(parser.parse(vim.api.nvim_buf_get_lines(0, 0, -1, false))).rows[3], { "", "", "" })
+  end
 end
 
 function tests.reset_row_errors_and_undo()
@@ -472,6 +481,9 @@ function tests.reset_row_errors_and_undo()
     local valid = { "|A|B|", "|---|---|", "|x|y|" }
     set_buffer(valid, 2)
     assert(not api.reset_row())
+    equal(vim.api.nvim_buf_get_lines(0, 0, -1, false), valid)
+    equal(notifications[#notifications], { "Cannot reset the separator row.", vim.log.levels.WARN })
+    vim.cmd("TableResetRow")
     equal(vim.api.nvim_buf_get_lines(0, 0, -1, false), valid)
     equal(notifications[#notifications], { "Cannot reset the separator row.", vim.log.levels.WARN })
     for _, invalid in ipairs({
